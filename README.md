@@ -5,6 +5,8 @@ Para utilizar tableresponsive.js:
 
 1.- Instanciar un objeto tableresponsive e indicar en la propiedad id del objeto el identificador de la tabla a la que se le aplicará el responsive,
 
+    import Tableresponsive from './tableresponsive.js';
+
     new Tableresponsive({
         id:'#IDtable'
     });
