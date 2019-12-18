@@ -35,10 +35,3 @@ O bien puede agregar la propiedad class al objeto y declare los estilos que dese
             p: 'text-muted';
         }
     });
-
-Para modificar el tiempo de espera modificar la propiedad delay (por defecto 50 milisegundos) agregar la propiedad delay al objeto:
-
-    new Tableresponsive({
-        id:'#IDtable',
-        delay: 500,
-    });
