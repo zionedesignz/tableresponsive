@@ -20,9 +20,9 @@ export default class Tableresponsive {
             }) : ({button:'', tr:'', p:'',b:''}),
         };
         // ATRIBUTOS CLASE (ESTATICOS)
-        this.table = document.getElementById(this.props.id);
+        this.table = document.querySelector(this.props.id);
         this.tableInitStyleWidth = this.table.style.width;
-        this.tableColumns = document.getElementById(this.props.id).children[0].children[0].children.length;
+        this.tableColumns = document.querySelector(this.props.id).children[0].children[0].children.length;
         this.tableColumnsArray = this.obtainWidthColumns();
         this.marginHorTotal = this.obtainWidthParents();
         // INICIALIZAR ESTADO
