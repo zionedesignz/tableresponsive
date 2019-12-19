@@ -1,12 +1,9 @@
 export default class Tableresponsive {
-
     constructor(props = {}) {
-        //PROPIEDADES
+        // PROPIEDADES
         this.props = {
             // ID OBLIGATORIO PARA FORZAR EL RESPONSIVE
             id: props.id ? props.id : console.log(`Para utilizar tableresponsive.js es necesario instanciar un objeto y pasar el id como parametro => new Tableresponsive( {id:'#idtable'} );`),
-            // TIEMPO DE ESPERA PARA EFECTUAR EL RESPONSIVE
-            delay: props.delay ? props.delay : 50,
             // ESTILOS
             style: props.style ? ({  
                 button: props.style.button ? props.style.button : '',
@@ -22,74 +19,102 @@ export default class Tableresponsive {
                 b: props.class.b ? props.class.b : ''
             }) : ({button:'', tr:'', p:'',b:''}),
         };
-        // ESTADO    
-        this.compressed = false;
-        this.descompressed = false;
-        this.firstCompressed = true;
-        this.state = {};
-        // VALORES DOM
+        // ATRIBUTOS CLASE (ESTATICOS)
         this.table = document.querySelector(this.props.id);
         this.tableInitStyleWidth = this.table.style.width;
-        this.tableWidth = document.querySelector(this.props.id).scrollWidth;
-        this.tableWidthCompressed = 0;
-        this.tableRows = document.querySelector(this.props.id).children[1].children.length;
         this.tableColumns = document.querySelector(this.props.id).children[0].children[0].children.length;
-        this.tableColumnsHidden = 0;
-        this.tableColumnsVisible = 0;
         this.tableColumnsArray = this.obtainWidthColumns();
         this.marginHorTotal = this.obtainWidthParents();
-        this.setTime;
-        this.windowWidth = document.body.scrollWidth;
-        // AL CARGAR
-        window.onload = () => {
-            // AÑADIR EVENTO REDIMENSIONAR
-            window.addEventListener('resize', this.resize.bind(this));
-            // INICIALIZAR
-            setTimeout(this.action.bind(this), 400);
-        }
+        // INICIALIZAR ESTADO
+        this.state = {
+            action: '',
+            firstCompressed: true,
+            tableColumnsHidden: 0,
+            tableColumnsVisible: 0,
+            tableWidth: '',
+            tableRows: '',
+            windowWidth: ''
+        };
+        // CARGAR/REDIMENSIONAR
+        window.onload = () => this.main();
+        window.onresize = () => this.main();
     }
-    // LLAMAR A ACTION CON RETRASO
-    resize() {
-        clearTimeout(this.setTime);
-        this.setTime = setTimeout(this.action.bind(this), this.props.delay);
+    // PROCESADOR
+    async main() {
+        await this.actState().then( async() => {
+            await this.action().then( action => {
+                switch(action) {
+                    case 'compressing':
+                        // OCULTAR TABLA & RESTABLECER ACTION Y COMPRIMIR
+                        this.table.style.visibility = 'hidden';
+                        return this.compressing();
+                        break;
+                    case 'descompressing':
+                        // OCULTAR TABLA & RESTABLECER ACTION Y DESCOMPRIMIR
+                        this.table.style.visibility = 'hidden';
+                        return this.descompressing();
+                        break;
+                    default:
+                        // OCULTAR TABLA & RESTABLECER ACTION Y DESCOMPRIMIR
+                        this.table.style.visibility = 'visible';
+                        return;   
+                };
+            }).then( res => {
+                if (res != undefined) {
+                    console.table(res);
+                    this.state.action = '';
+                    this.main();
+                } 
+            }).catch( err => console.log(err) );
+        }).catch( err => console.log(err) ); 
+    }
+    // ESTADO
+    async actState() {
+        return await new Promise( (resolve, reject) => {
+            try {
+                //FORZAR ESTILO DE ANCHO DE TABLA PARA REALIZAR LA COMPROBACION
+                this.table.style.width = 'auto';
+                // ACTUALIZAR DOM DATA
+                this.state.tableColumnsHidden > 0 ? this.state.firstCompressed = false : this.state.firstCompressed = true;
+                this.state.windowWidth = document.body.scrollWidth;
+                this.state.tableRows = this.table.children[1].children.length; 
+                this.state.tableWidth = this.table.scrollWidth;
+                this.state.tableColumnsVisible = this.tableColumns-this.state.tableColumnsHidden;
+                resolve(true);
+            } catch(err) {
+                reject(err);
+            }
+        });
     }
     // COMPROBAR ACCION A REALIZAR
-    action() {
-        //FORZAR ESTILO DE ANCHO DE TABLA PARA REALIZAR LA COMPROBACION
-        this.table.style.width = 'auto';
-        // ACTUALIZAR DOM DATA
-        this.tableColumnsHidden > 0 ? this.firstCompressed = false : this.firstCompressed = true;
-        this.windowWidth = document.body.scrollWidth;
-        this.tableRows = this.table.children[1].children.length; 
-        this.tableWidth = this.table.scrollWidth;
-        this.tableColumnsVisible = this.tableColumns-this.tableColumnsHidden;
-        /*-------------------------------------------------------------------------VALIDAR COMPRESS-----------------------------------------------------------------------------------------------------*/
-        // SI EL NUMERO DE COLUMNAS -1 (DEJAR SIEMPRE UNA VISIBLE) ES SUPERIOR A DE COLUMNAS OCULTAS... COMPROBAR SI SE PUEDE COMPRIMIR
-        if (this.tableColumns-1 > this.tableColumnsHidden) {
-            // SI EL ANCHO DE LA TABLA ES SUPERIOR AL ANCHO DE LA PANTALLA - LOS MARGENES/PADDING DE LOS ELEMENTOS PADRE --> COMPRESSED ACTIVO
-            this.tableWidth >= (this.windowWidth-this.marginHorTotal) ? this.compressed = true : this.compressed = false;
-            // SI ESTA COMPRIMIENDO LLAMAR A LA FUNCION PARA COMPRIMIR
-            this.compressed ? this.compressing() : '';
-        }
-        /*-------------------------------------------------------------------------VALIDAR DESCOMPRESS--------------------------------------------------------------------------------------------------*/
-        // SI HAY ALGUNA COLUMNA OCULTA & EL NUMERO DE COLUMNAS DE LA TABLA ES DISTINTO AL DE LAS COLUMNAS VISIBLES & NO ESTA COMPRIMIENDO... COMPROBAR SI SE PUEDE DESCOMPRIMIR
-        if (this.tableColumnsHidden > 0 && this.tableColumns != this.tableColumnsVisible && this.compressed == false) {
-            // SI EL ANCHO DE LA TABLA + EL ANCHO DE LA ULTIMA COLUMNA OCULTA ES INFERIOR AL ANCHO DE LA PANTALLA - LOS MARGENES/PADDING DE LOS ELEMENTOS PADRE --> DESCOMPRESSED ACTIVO
-            (this.tableWidth + this.tableColumnsArray[this.tableColumnsVisible]) < (this.windowWidth-this.marginHorTotal) ? this.descompressed = true : this.descompressed = false;
-            // SI ESTA DESCOMPRIMIENDO LLAMAR A LA FUNCION PARA DESCOMPRIMIR             
-            this.descompressed ? this.descompressing() : '';
-        }
-        // OCULTAR DURANTE EL PROCESO
-        !this.compressed && !this.descompressed || this.firstCompressed ? this.table.style.visibility = 'visible' : this.table.style.visibility = 'hidden';
-        // SI LA TABLA ESTA DESPLEGADA AL COMPLETO PONER EL ANCHO INICIAL
-        this.firstCompressed && this.tableColumnsHidden == 0 ? this.table.style.width = this.tableInitStyleWidth : this.table.style.width = 'auto';
+    async action() {
+        return await new Promise( (resolve, reject) => {
+            try {
+                // SI HAY ALGUNA COLUMNA OCULTA & EL NUMERO DE COLUMNAS DE LA TABLA ES DISTINTO AL DE LAS COLUMNAS VISIBLES, COMPROBAR SI SE PUEDE DESCOMPRIMIR
+                if (this.state.tableColumnsHidden > 0 && this.tableColumns != this.state.tableColumnsVisible) {
+                    // SI EL ANCHO DE LA TABLA + EL ANCHO DE LA ULTIMA COLUMNA OCULTA ES INFERIOR AL ANCHO DE LA PANTALLA - LOS MARGENES/PADDING DE LOS ELEMENTOS PADRE --> DESCOMPRESSED ACTIVO
+                    (this.state.tableWidth + this.tableColumnsArray[this.state.tableColumnsVisible]) < (this.state.windowWidth-this.marginHorTotal) ? this.state.action = 'descompressing' : this.state.action = '';
+                }
+                // SI EL NUMERO DE COLUMNAS VISIBLES ES SUPERIOR O IGUAL A 2 Y NO ESTA DESCOMPRIMIENDO, COMPROBAR SI SE PUEDE COMPRIMIR
+                if (this.state.tableColumnsVisible >= 2 && this.state.action != 'descompressing') {
+                    // SI EL ANCHO DE LA TABLA ES SUPERIOR AL ANCHO DE LA PANTALLA - LOS MARGENES/PADDING DE LOS ELEMENTOS PADRE --> COMPRESSED ACTIVO
+                    this.state.tableWidth >= (this.state.windowWidth-this.marginHorTotal) ? this.state.action = 'compressing' : this.state.action = '';
+                }
+                // SI LA TABLA ESTA DESPLEGADA AL COMPLETO PONER EL ESTILO DE ANCHO INICIAL
+                this.state.firstCompressed && this.state.tableColumnsHidden == 0 ? this.table.style.width = this.tableInitStyleWidth : this.table.style.width = 'auto';
+                // DEVOLVER ACCION A REALIZAR
+                resolve(this.state.action);
+            } catch(err) {
+                reject(err);
+            }
+        });
     }
     // COMPRIMIR TABLA
     async compressing() {
         return await new Promise( (resolve, reject) => {
-            setTimeout( () => {
+            try {
                 // RECORRER LAS FILAS
-                for (let i = 0; i < this.tableRows; i++) {
+                for (let i = 0; i < this.state.tableRows; i++) {
                     // OBTENER POSICION DATA Y POSICION INSERTAR NUEVA FILA PARA LOS DATOS COMPRIMIDOS (EN LA PRIMERA LANZADA)
                     let positionData = 0;
                     let positionInsert = 0;
@@ -101,31 +126,36 @@ export default class Tableresponsive {
                         positionInsert = (i*2)+1
                     }                          
                     // PRIMERA LANZADA
-                    if (this.firstCompressed) {
+                    if (this.state.firstCompressed) {
                         // OBTENER FILA ACTUAL
                         let tr = this.table.children[1].children[positionData];
                         // AÑADIR BOTON
                         let button = document.createElement('button');
                             button.innerHTML = '+';
-                            button.setAttribute('style','margin-left:5px;'+this.props.style.button);
-                            button.setAttribute('class',this.props.class.button);
+                            button.setAttribute('style',this.props.style.button);
+                            // SI ESTA MARCADA LA FILA AL COMPRIMIR APLICAR OTRO ESTILO
+                            if (tr.classList.contains('bg-primary')) {
+                                button.setAttribute('class','btn btn-light btn-sm text-primary mt-2');
+                            } else {
+                                button.setAttribute('class',this.props.class.button);
+                            }
                             button.addEventListener('click', () => this.alternarVisibilidad() );
                         tr.appendChild(button);
                         // OBTENER POSICION ÚLTIMA COLUMNA VISIBLE
-                        let lastColVisible = this.table.children[1].children[positionData].children.length-(2+this.tableColumnsHidden);
+                        let lastColVisible = this.table.children[1].children[positionData].children.length-(2+this.state.tableColumnsHidden);
                         // OCULTAR TITULO HEADER
-                        this.table.children[0].children[0].children[this.tableColumns-(1+this.tableColumnsHidden)].style.display = 'none';
-                        this.table.children[0].children[0].children[this.tableColumns-(1+this.tableColumnsHidden)].style.width = 0;
+                        this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.display = 'none';
+                        this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.width = 0;
                         // OCULTAR COLUMNA
                         tr.children[lastColVisible].style.display = 'none';                  
                         // CREAR '<b>' CON EL NOMBRE COLUMNA
                         let newBColName = document.createElement('b');
                             newBColName.setAttribute('style',this.props.style.b);
                             newBColName.setAttribute('class',this.props.class.b);
-                            newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.tableColumnsHidden)].textContent;
+                            newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].textContent;
                         // CREAR TEXTNODE CON LA DATA DE LA COLUMNA A OCULTAR
                         let newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
-                        //CREAR '<p>' PARA INCLUIR TODO
+                        // CREAR '<p>' PARA INCLUIR TODO
                         let newPColName = document.createElement('p');
                             newPColName.setAttribute('style','margin:0;'+this.props.style.p);
                             newPColName.setAttribute('class',this.props.class.p);
@@ -140,7 +170,7 @@ export default class Tableresponsive {
                             TrContainer.setAttribute('class',this.props.class.tr);
                             TrContainer.appendChild(newTr);
                             TrContainer.style.visibility = 'collapse';
-                        if ((positionData/2) == this.tableRows-1 ) {
+                        if ((positionData/2) == this.state.tableRows-1 ) {
                             this.table.children[1].appendChild(TrContainer);
                             return resolve(true);
                         } else {
@@ -153,137 +183,100 @@ export default class Tableresponsive {
                             // OBTENER FILA ACTUAL
                             let tr = this.table.children[1].children[i];
                             // OBTENER POSICION ÚLTIMA COLUMNA VISIBLE
-                            let lastColVisible = this.table.children[1].children[i].children.length-(2+this.tableColumnsHidden);
+                            let lastColVisible = this.table.children[1].children[i].children.length-(2+this.state.tableColumnsHidden); 
                             // OCULTAR TITULO HEADER
-                            this.table.children[0].children[0].children[this.tableColumns-(1+this.tableColumnsHidden)].style.display = 'none';
-                            this.table.children[0].children[0].children[this.tableColumns-(1+this.tableColumnsHidden)].style.width = 0;
+                            this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.display = 'none';
+                            this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.width = 0;
                             // OCULTAR COLUMNA
                             tr.children[lastColVisible].style.display = 'none';
                             // CREAR '<b>' CON EL NOMBRE COLUMNA
                             let newBColName = document.createElement('b');
                                 newBColName.setAttribute('style',this.props.style.b);
                                 newBColName.setAttribute('class',this.props.class.b);
-                                newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.tableColumnsHidden)].textContent;
+                                newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].textContent;
                             // CREAR TEXTNODE CON LA DATA DE LA COLUMNA A OCULTAR
                             let newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
-                            //CREAR '<p>' PARA INCLUIR TODO
+                            // CREAR '<p>' PARA INCLUIR TODO
                             let newPColName = document.createElement('p');
                                 newPColName.setAttribute('style','margin:0;'+this.props.style.p);
                                 newPColName.setAttribute('class',this.props.class.p);
                                 newPColName.appendChild(newBColName);
                                 newPColName.appendChild(newBText);
-                            if (i == this.tableRows-2 ) {
+                            if (i == this.state.tableRows-2 ) {
                                 this.table.children[1].children[i+1].children[0].appendChild(newPColName);
                                 return resolve(true);
                             } else {
                                 this.table.children[1].children[i+1].children[0].appendChild(newPColName);
-                            } 
+                            }
                         }
                     }
                 }
-            }, 50)
-        }).then( resolve => {
+            } catch(err) {
+                reject(err);
+            }
+        }).then( () => {
             // HACER RECUENTO DE COLUMNAS OCULTAS                    
-            this.tableColumnsHidden = 0;
-            Array.from(this.table.children[1].children[0].children).map( td => {
+            this.state.tableColumnsHidden = 0;
+            Array.from(this.table.children[1].children[0].children).forEach( td => {
                 if (window.getComputedStyle(td).getPropertyValue('display') == 'none') {
-                    this.tableColumnsHidden++;
+                    this.state.tableColumnsHidden++;
                 }
             })       
         }).then( () => {
-            // VALIDAR POSIBLE BUCLE
-            if ( (this.state != {}) && (this.state.compress == false) && (this.state.descompress == true) && (this.state.date == new Date().toLocaleString()) && (this.state.colHidden == this.tableColumnsHidden-1)) {
-                // GUARDAR ESTADO, MOSTRAR ESTADO EN CONSOLA Y VOLVER A EVALUAR
-                this.state = {
-                    date: new Date().toLocaleString(),
-                    compress: this.compressed,
-                    descompress: this.descompressed,
-                    colVisible: this.tableColumns-this.tableColumnsHidden,
-                    colHidden: this.tableColumnsHidden,
-                    init: this.firstCompressed,
-                    bucle: 'on'
-                }
-                console.log(this.state);
-                // VOLVER A VISUALIZAR LA TABLA
-                this.table.style.visibility = 'visible';
-                // FINALIZAR
-                return;
-            } else {
-                // GUARDAR ESTADO, MOSTRAR ESTADO EN CONSOLA Y VOLVER A EVALUAR
-                this.state = {
-                    date: new Date().toLocaleString(),
-                    compress: this.compressed,
-                    descompress: this.descompressed,
-                    colVisible: this.tableColumns-this.tableColumnsHidden,
-                    colHidden: this.tableColumnsHidden,
-                    init: this.firstCompressed,
-                    bucle: 'off'
-                }
-                console.log(this.state);
-                // REALIZAR COMPROBACION
-                this.resize();
-            }    
+            // DEVOLVER ESTADO
+            return this.state;
         }); 
     }
     // DESCOMPRIMIR TABLA
     async descompressing() {
         return await new Promise( (resolve, reject) => {
-            setTimeout( () => {
-                for (let i = 0; i <= this.tableRows-2; i++) {                 
+            try {
+                for (let i = 0; i <= this.state.tableRows-2; i++) {                 
                     if (i%2 == 0) {
                         // OBTENER FILA ACTUAL
                         let tr = this.table.children[1].children[i];
                         // OBTENER NUMERO DE ELEMENTOS EN EL DESPLEGABLE OCULTO
                         let elements = this.table.children[1].children[i+1].children[0].children.length;
                         // MOSTRAR COLUMNA HEADER
-                        this.table.children[0].children[0].children[this.tableColumnsVisible].style.display = 'table-cell';
-                        this.table.children[0].children[0].children[this.tableColumnsVisible].style.width = 'auto';
+                        this.table.children[0].children[0].children[this.state.tableColumnsVisible].style.display = 'table-cell';
+                        this.table.children[0].children[0].children[this.state.tableColumnsVisible].style.width = 'auto';
                         // MOSTRAR COLUMNA
-                        tr.children[this.tableColumnsVisible].style.display = 'table-cell';
+                        tr.children[this.state.tableColumnsVisible].style.display = 'table-cell';
                         // ELIMINAR ÚLTIMO ELEMENTO EN EL DESPLEGABLE OCULTO
                         this.table.children[1].children[i+1].children[0].removeChild(this.table.children[1].children[i+1].children[0].children[elements-1]);
                         // SI ES LA ÚLTIMA COLUMNA OCULTA, ELIMINAR BOTON FINAL
-                        if (this.tableColumnsVisible == this.tableColumns-1) {
+                        if (this.state.tableColumnsVisible == this.tableColumns-1) {
                             tr.removeChild(tr.children[tr.children.length-1]);
                         }
                         // SI ES LA ÚLTIMA FILA FINALIZAR BUCLE
-                        if (i == this.tableRows-2 ) {        
+                        if (i == this.state.tableRows-2 ) {        
                             return resolve(true);
                         }
                     }
                 }
-            }, 50)
-        }).then( resolve => {
-            this.tableColumnsVisible == this.tableColumns-1 ? this.firstCompressed = true : this.firstCompressed = false;
+            } catch(err) {
+                reject(err);
+            }
+        }).then( () => {
+            this.state.tableColumnsVisible == this.tableColumns-1 ? this.state.firstCompressed = true : this.state.firstCompressed = false;
             // SI SE VUELVE A ESTADO INICIAL, ELIMINAR LAS FILAS AÑADIDAS
-            if (this.firstCompressed) {
-                let i = this.tableRows;
+            if (this.state.firstCompressed) {
+                let i = this.state.tableRows;
                 do {
                     if (i%2 != 0) this.table.children[1].removeChild(this.table.children[1].children[i]);
                     i--;
                 } while (i >= 0)
             }
             // HACER RECUENTO DE COLUMNAS OCULTAS
-            this.tableColumnsHidden = 0;
-            Array.from(this.table.children[1].children[0].children).map( td => {
+            this.state.tableColumnsHidden = 0;
+            Array.from(this.table.children[1].children[0].children).forEach( td => {
                 if (window.getComputedStyle(td).getPropertyValue('display') == 'none') {
-                    this.tableColumnsHidden++;
+                    this.state.tableColumnsHidden++;
                 } 
             })
         }).then( () => {
-            // GUARDAR ESTADO, MOSTRAR ESTADO EN CONSOLA Y VOLVER A EVALUAR
-            this.state = {
-                date: new Date().toLocaleString(),
-                compress: this.compressed,
-                descompress: this.descompressed,
-                colVisible: this.tableColumns-this.tableColumnsHidden,
-                colHidden: this.tableColumnsHidden,
-                init: this.firstCompressed,
-                bucle: 'off'
-            }
-            console.log(this.state);
-            // REALIZAR COMPROBACIÓN
-            this.resize();
+            // DEVOLVER ESTADO
+            return this.state;
         });  
     }
     // OBTIENE ANCHO DE MARGIN Y PADDING DE ELEMENTOS PADRES A LA TABLA
@@ -306,7 +299,7 @@ export default class Tableresponsive {
     // OBTIENE ANCHO DE COLUMNAS DE LA TABLA
     obtainWidthColumns() {
         let array = [];
-        Array.from(this.table.children[0].children[0].children).map( th => {
+        Array.from(this.table.children[0].children[0].children).forEach( th => {
             let totalWidth = 0;
             let ML = window.getComputedStyle(th).getPropertyValue('margin-left').slice(0,-2);
             let MR = window.getComputedStyle(th).getPropertyValue('margin-right').slice(0,-2);
