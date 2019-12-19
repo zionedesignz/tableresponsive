@@ -20,9 +20,9 @@ export default class Tableresponsive {
             }) : ({button:'', tr:'', p:'',b:''}),
         };
         // ATRIBUTOS CLASE (ESTATICOS)
-        this.table = document.querySelector(this.props.id);
+        this.table = document.getElementById(this.props.id);
         this.tableInitStyleWidth = this.table.style.width;
-        this.tableColumns = document.querySelector(this.props.id).children[0].children[0].children.length;
+        this.tableColumns = document.getElementById(this.props.id).children[0].children[0].children.length;
         this.tableColumnsArray = this.obtainWidthColumns();
         this.marginHorTotal = this.obtainWidthParents();
         // INICIALIZAR ESTADO
@@ -35,9 +35,9 @@ export default class Tableresponsive {
             tableRows: '',
             windowWidth: ''
         };
-        // CARGAR/REDIMENSIONAR
-        window.onload = () => this.main();
-        window.onresize = () => this.main();
+        // EVENTOS WINDOW
+        window.addEventListener('resize', this.main.bind(this));
+        window.addEventListener('load', this.main.bind(this));
     }
     // PROCESADOR
     async main() {
