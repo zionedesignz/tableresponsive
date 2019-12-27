@@ -158,6 +158,8 @@ export default class Tableresponsive {
                             newBColName.setAttribute('style',this.props.style.b);
                             newBColName.setAttribute('class',this.props.class.b);
                             newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].textContent;
+                            newBColName.style.cursor = 'hand';
+                            newBColName.addEventListener('click', this.filterData.bind(this));
                         // CREAR TEXTNODE CON LA DATA DE LA COLUMNA A OCULTAR
                         let newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
                         // CREAR '<p>' PARA INCLUIR TODO
@@ -199,6 +201,8 @@ export default class Tableresponsive {
                                 newBColName.setAttribute('style',this.props.style.b);
                                 newBColName.setAttribute('class',this.props.class.b);
                                 newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].textContent;
+                                newBColName.style.cursor = 'hand';
+                                newBColName.addEventListener('click', this.filterData.bind(this));
                             // CREAR TEXTNODE CON LA DATA DE LA COLUMNA A OCULTAR
                             let newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
                             // CREAR '<p>' PARA INCLUIR TODO
@@ -410,13 +414,20 @@ export default class Tableresponsive {
     }
     // FILTRAR DATA
     filterData(e) {
+        // OBTENER INDEX
+        let index = e.target.nodeName == 'B' ? (
+            (this.tableColumns-1)-Array.from(e.target.parentNode.parentNode.children).indexOf(e.target.parentNode)
+        ) : e.target.cellIndex;
         // SI '' --> ↑, SI EXISTE ↑ --> ↓, SI EXISTE ↓ --> ''
         if (!e.target.textContent.includes('↑') && !e.target.textContent.includes('↓')) {
             e.target.textContent = e.target.textContent+' ↑';
+            if (e.target.nodeName == 'B') e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
         } else if (e.target.textContent.includes('↑')) {
             e.target.textContent = e.target.textContent.slice(0,-2)+' ↓';
+            if (e.target.nodeName == 'B') e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
         } else if (e.target.textContent.includes('↓')) {
             e.target.textContent = e.target.textContent.slice(0,-2);
+            if (e.target.nodeName == 'B') e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
             // ASIGNAR DATA INICIAL A DATA TEMPORAL Y INSERTAR DATA
             Object.defineProperty(this.data, 'temp', {value:this.data.init});
             this.insertData();
@@ -424,7 +435,7 @@ export default class Tableresponsive {
         // SI ↑ O ↓ APLICA FILTRO A THIS.DATA.TEMP Y SE INSERTA EN LA TABLA, SINO INSERTAR EN LA TABLA THIS.DATA.INIT
         if (e.target.textContent.includes('↑') || e.target.textContent.includes('↓')) {
             this.objectDataBuilder().then( data => {
-                this.sortData(`val${e.target.cellIndex}`, e.target.textContent.includes('↓'));
+                this.sortData(`val${index}`, e.target.textContent.includes('↓'));
             }).then( () => this.insertData() );
         }
     }
