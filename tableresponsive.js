@@ -25,7 +25,7 @@ export default class Tableresponsive {
         this.tableColumns = document.querySelector(this.props.id).children[0].children[0].children.length;
         this.tableColumnsArray = this.obtainWidthColumns();
         this.marginHorTotal = this.obtainWidthParents();
-        // INICIALIZAR ESTADO
+        // ESTADO
         this.state = {
             action: '',
             firstCompressed: true,
@@ -35,9 +35,14 @@ export default class Tableresponsive {
             tableRows: '',
             windowWidth: ''
         };
+        // DATA
+        this.data = {};
         // EVENTOS WINDOW
         window.addEventListener('resize', this.main.bind(this));
         window.addEventListener('load', this.main.bind(this));
+        // EVENTO ORDENAR POR COLUMNA
+        this.table.children[0].style.cursor = 'hand';
+        this.table.children[0].addEventListener('click', this.filterData.bind(this));
     }
     // PROCESADOR
     async main() {
@@ -76,7 +81,7 @@ export default class Tableresponsive {
                 this.table.style.width = 'auto';
                 // ACTUALIZAR DOM DATA
                 this.state.tableColumnsHidden > 0 ? this.state.firstCompressed = false : this.state.firstCompressed = true;
-                this.state.windowWidth = document.body.scrollWidth;
+                this.state.windowWidth = window.innerWidth-30; // ANCHO BUTTON
                 this.state.tableRows = this.table.children[1].children.length; 
                 this.state.tableWidth = this.table.scrollWidth;
                 this.state.tableColumnsVisible = this.tableColumns-this.state.tableColumnsHidden;
@@ -139,7 +144,7 @@ export default class Tableresponsive {
                             } else {
                                 button.setAttribute('class',this.props.class.button);
                             }
-                            button.addEventListener('click', () => this.alternarVisibilidad() );
+                            button.addEventListener('click',this.alternarVisibilidad.bind(this));
                         tr.appendChild(button);
                         // OBTENER POSICION ÚLTIMA COLUMNA VISIBLE
                         let lastColVisible = this.table.children[1].children[positionData].children.length-(2+this.state.tableColumnsHidden);
@@ -312,12 +317,115 @@ export default class Tableresponsive {
         return array;
     }
     // MOSTAR/OCULTAR DESPLEGABLE
-    alternarVisibilidad(e = window.event) {
+    alternarVisibilidad(e) {
         // SI ESTA COLAPSADO HACERLO VISIBLE Y VICEVERSA
         if (e.path[1].nextElementSibling.style.visibility == 'collapse') {
             e.path[1].nextElementSibling.style.visibility = 'visible';
         } else {
             e.path[1].nextElementSibling.style.visibility = 'collapse';
+        }
+    }
+    // CREAR DATA
+    async objectDataBuilder() {
+        return await new Promise( (resolve, reject) => {
+            try {
+                // DEFINIR PROPIEDAD INIT & TEMP EN THIS.DATA
+                if (!this.data.hasOwnProperty('init')) Object.defineProperty(this.data, 'init', {value:[], configurable:true});
+                Object.defineProperty(this.data, 'temp', {value:[], configurable:true});
+                const initData = this.data.init.length == 0 ? true : false;
+                // RECORRER TABLA E INSERTAR OBJETO FILA
+                Array.from(this.table.children).map( tPart => {
+                    Array.from(tPart.children).map( (row, rowKey) => {
+                        let fila = {};
+                        Array.from(row.children).map( (col, colKey) => {
+                            Object.defineProperty(fila, 'val'+colKey, {value:col.textContent});
+                        });
+                        // SI ES EL TBODY GUARDAR DATA
+                        if (row.parentNode.nodeName == 'TBODY') {
+                            // SI ESTA DESPLEGADA LA TABLA GUARDAR DATA CADA FILA
+                            // SINO GUARDAR DATA FILAS PARES(INDICE/2)
+                            if (this.state.firstCompressed == true) {
+                                if (initData) Object.defineProperty(this.data.init, rowKey, {value:fila});
+                                Object.defineProperty(this.data.temp, rowKey, {value:fila});
+                            } else if (rowKey%2==0) {
+                                if (initData) Object.defineProperty(this.data.init, rowKey/2, {value:fila});
+                                Object.defineProperty(this.data.temp, rowKey/2, {value:fila});
+                            }
+                        }
+                    });
+                });
+                resolve(this.data);
+            } catch(err) {
+                reject(err);
+            }
+        });
+    }
+    // ORDENAR DATA
+    async sortData(val, reverse) {
+        return await new Promise( (resolve, reject) => {
+            try {
+                let newData = this.data.temp.slice().sort((a, b) => a[val].localeCompare(b[val]));
+                if(reverse) newData = newData.reverse();
+                Object.defineProperty(this.data, 'temp', {value:newData});
+            } catch(err) {
+                reject(err);
+            }
+        });
+    }
+    // INSERTAR DATA
+    async insertData() {
+        return await new Promise( (resolve, reject) => {
+            try {
+                resolve( Array.from(this.table.children).map( tPart => {
+                    if (tPart.nodeName == 'TBODY') {
+                        Array.from(tPart.children).map( (row, rowKey) => {
+                            // SI ESTA DESPLEGADA LA TABLA INSERTAR DATA EN CADA FILA
+                            // SINO GUARDAR INSERTAR DATA(INDICE/2) EN FILAS PARES Y EN FILAS IMPARES REEMPLAZAR LOS DATOS OCULTOS
+                            if (this.state.firstCompressed == true) {
+                                Array.from(row.children).map( (col, colKey) => {
+                                    // REMPLAZAR DATOS EN LA COLUMNA
+                                    col.textContent = this.data.temp[rowKey]['val'+colKey];
+                                });
+                            } else {
+                                if (rowKey%2==0) {
+                                    Array.from(row.children).map( (col, colKey) => {
+                                        // REMPLAZAR DATOS EN LA COLUMNA
+                                        col.textContent = this.data.temp[rowKey/2]['val'+colKey];
+                                    });
+                                } else {
+                                    // REMPLAZAR DATOS EN LA COLUMNA OCULTA CON LOS DATOS DE LA NO VISIBLES DE LA FILA ANTERIOR
+                                    Array.from(row.children[0].children).map( (p, pKey) => {
+                                        const colData = p.parentNode.parentNode.parentNode.children[rowKey-1].children.length-(pKey+2);
+                                        p.lastChild.textContent = ' : '+p.parentNode.parentNode.parentNode.children[rowKey-1].children[colData].textContent;
+                                    });
+                                }
+                            }
+                        });
+                    }
+                }));
+            } catch(err) {
+                reject(err);
+            }
+        });
+    }
+    // FILTRAR DATA
+    filterData(e) {
+        // SI '' --> ↑, SI EXISTE ↑ --> ↓, SI EXISTE ↓ --> ''
+        if (!e.target.textContent.includes('↑') && !e.target.textContent.includes('↓')) {
+            e.target.textContent = e.target.textContent+' ↑';
+        } else if (e.target.textContent.includes('↑')) {
+            e.target.textContent = e.target.textContent.slice(0,-2)+' ↓';
+        } else if (e.target.textContent.includes('↓')) {
+            e.target.textContent = e.target.textContent.slice(0,-2);
+            // ASIGNAR DATA INICIAL A DATA TEMPORAL Y INSERTAR DATA
+            Object.defineProperty(this.data, 'temp', {value:this.data.init});
+            this.insertData();
+        }
+        // SI ↑ O ↓ APLICA FILTRO A THIS.DATA.TEMP Y SE INSERTA EN LA TABLA, SINO INSERTAR EN LA TABLA THIS.DATA.INIT
+        if (e.target.textContent.includes('↑') || e.target.textContent.includes('↓')) {
+            this.objectDataBuilder().then( data => {
+                this.sortData(`val${e.target.cellIndex}`, e.target.textContent.includes('↓'));
+            }).then( () => this.insertData() );
         }
     }
   }

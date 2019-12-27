@@ -35,3 +35,6 @@ O bien puede agregar la propiedad class al objeto y declare los estilos que dese
             p: 'text-muted';
         }
     });
+
+Puede ordenar datos por texto (de la A a la Z o de la Z a la A), números (de menor a mayor o de mayor a menor) pulsando en la cabecera de la columna.
+Pulsando una vez se aplica un orden ascendente, pulsando una segunda vez se aplica un orden descendente y al volver a pulsar se elimina el filtro. 
