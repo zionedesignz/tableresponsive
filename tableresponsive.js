@@ -341,17 +341,20 @@ export default class Tableresponsive {
                 Array.from(this.table.children).map( tPart => {
                     Array.from(tPart.children).map( (row, rowKey) => {
                         let fila = {};
-                        Array.from(row.children).map( (col, colKey) => {
-                            Object.defineProperty(fila, 'val'+colKey, {value:col.textContent});
-                        });
                         // SI ES EL TBODY GUARDAR DATA
                         if (row.parentNode.nodeName == 'TBODY') {
                             // SI ESTA DESPLEGADA LA TABLA GUARDAR DATA CADA FILA
-                            // SINO GUARDAR DATA FILAS PARES(INDICE/2)
+                            // SINO GUARDAR DATA FILAS PARES(INDICE/2) EXCEPTO POS. BOTON
                             if (this.state.firstCompressed == true) {
+                                Array.from(row.children).map( (col, colKey) => {
+                                    Object.defineProperty(fila, 'val'+colKey, {value:col.textContent});
+                                });
                                 if (initData) Object.defineProperty(this.data.init, rowKey, {value:fila});
                                 Object.defineProperty(this.data.temp, rowKey, {value:fila});
                             } else if (rowKey%2==0) {
+                                Array.from(row.children).map( (col, colKey) => {
+                                    if ((row.children.length-1) != colKey) Object.defineProperty(fila, 'val'+colKey, {value:col.textContent});
+                                });
                                 if (initData) Object.defineProperty(this.data.init, rowKey/2, {value:fila});
                                 Object.defineProperty(this.data.temp, rowKey/2, {value:fila});
                             }
@@ -393,8 +396,8 @@ export default class Tableresponsive {
                             } else {
                                 if (rowKey%2==0) {
                                     Array.from(row.children).map( (col, colKey) => {
-                                        // REMPLAZAR DATOS EN LA COLUMNA
-                                        col.textContent = this.data.temp[rowKey/2]['val'+colKey];
+                                        // REMPLAZAR DATOS EN LA COLUMNA, EXCEPTO POS. BOTON
+                                        if ((row.children.length-1) != colKey) col.textContent = this.data.temp[rowKey/2]['val'+colKey];
                                     });
                                 } else {
                                     // REMPLAZAR DATOS EN LA COLUMNA OCULTA CON LOS DATOS DE LA NO VISIBLES DE LA FILA ANTERIOR
@@ -421,16 +424,22 @@ export default class Tableresponsive {
         // SI '' --> ↑, SI EXISTE ↑ --> ↓, SI EXISTE ↓ --> ''
         if (!e.target.textContent.includes('↑') && !e.target.textContent.includes('↓')) {
             e.target.textContent = e.target.textContent+' ↑';
-            if (e.target.nodeName == 'B') e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
         } else if (e.target.textContent.includes('↑')) {
             e.target.textContent = e.target.textContent.slice(0,-2)+' ↓';
-            if (e.target.nodeName == 'B') e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
         } else if (e.target.textContent.includes('↓')) {
             e.target.textContent = e.target.textContent.slice(0,-2);
-            if (e.target.nodeName == 'B') e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
             // ASIGNAR DATA INICIAL A DATA TEMPORAL Y INSERTAR DATA
             Object.defineProperty(this.data, 'temp', {value:this.data.init});
             this.insertData();
+        }
+        // SI EL ELEMENTO ES DE LA FILA OCULTA, APLICAR ESTILO A CABECERA TABLA Y A DEMAS ELEMENTOS OCULTOS
+        if (e.target.nodeName == 'B') {
+            e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
+            Array.from(this.table.children[1].children).map( (tr, trKey) => {
+                if (trKey%2!=0) {
+                    tr.children[0].children[(this.tableColumns-1)-index].children[0].textContent = e.target.textContent;
+                }
+            });
         }
         // SI ↑ O ↓ APLICA FILTRO A THIS.DATA.TEMP Y SE INSERTA EN LA TABLA, SINO INSERTAR EN LA TABLA THIS.DATA.INIT
         if (e.target.textContent.includes('↑') || e.target.textContent.includes('↓')) {
