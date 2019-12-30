@@ -8,16 +8,18 @@ export default class Tableresponsive {
             style: props.style ? ({  
                 button: props.style.button ? props.style.button : '',
                 tr: props.style.tr ? props.style.tr : '',
+                td: props.style.td ? props.style.td : '',
                 p: props.style.p ? props.style.p : '',
                 b: props.style.b ? props.style.b : ''
-            }) : ({ button:'', tr:'', p:'',b:''}),
+            }) : ({ button:'',tr:'',td:'',p:'',b:''}),
             // CLASES
             class: props.class ? ({   
                 button: props.class.button ? props.class.button : '',
                 tr: props.class.tr ? props.class.tr : '',
+                td: props.class.td ? props.class.td : '',
                 p: props.class.p ? props.class.p : '',
                 b: props.class.b ? props.class.b : ''
-            }) : ({button:'', tr:'', p:'',b:''}),
+            }) : ({button:'',tr:'',td:'',p:'',b:''}),
         };
         // ATRIBUTOS CLASE (ESTATICOS)
         this.table = document.querySelector(this.props.id);
@@ -133,9 +135,9 @@ export default class Tableresponsive {
                     // PRIMERA LANZADA
                     if (this.state.firstCompressed) {
                         // OBTENER FILA ACTUAL
-                        let tr = this.table.children[1].children[positionData];
+                        const tr = this.table.children[1].children[positionData];
                         // AÑADIR BOTON
-                        let button = document.createElement('button');
+                        const button = document.createElement('button');
                             button.innerHTML = '+';
                             button.setAttribute('style',this.props.style.button);
                             // SI ESTA MARCADA LA FILA AL COMPRIMIR APLICAR OTRO ESTILO
@@ -147,35 +149,37 @@ export default class Tableresponsive {
                             button.addEventListener('click',this.alternarVisibilidad.bind(this));
                         tr.appendChild(button);
                         // OBTENER POSICION ÚLTIMA COLUMNA VISIBLE
-                        let lastColVisible = this.table.children[1].children[positionData].children.length-(2+this.state.tableColumnsHidden);
+                        const lastColVisible = this.table.children[1].children[positionData].children.length-(2+this.state.tableColumnsHidden);
                         // OCULTAR TITULO HEADER
                         this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.display = 'none';
                         this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.width = 0;
                         // OCULTAR COLUMNA
                         tr.children[lastColVisible].style.display = 'none';                  
                         // CREAR '<b>' CON EL NOMBRE COLUMNA
-                        let newBColName = document.createElement('b');
+                        const newBColName = document.createElement('b');
                             newBColName.setAttribute('style',this.props.style.b);
                             newBColName.setAttribute('class',this.props.class.b);
                             newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].textContent;
                             newBColName.style.cursor = 'hand';
                             newBColName.addEventListener('click', this.filterData.bind(this));
                         // CREAR TEXTNODE CON LA DATA DE LA COLUMNA A OCULTAR
-                        let newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
+                        const newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
                         // CREAR '<p>' PARA INCLUIR TODO
-                        let newPColName = document.createElement('p');
+                        const newPColName = document.createElement('p');
                             newPColName.setAttribute('style','margin:0;'+this.props.style.p);
                             newPColName.setAttribute('class',this.props.class.p);
                             newPColName.appendChild(newBColName);
                             newPColName.appendChild(newBText);
                         // CREAR NUEVA FILA Y NUEVA COLUMNA CON CONTENIDO ÚLTIMA COLUMNA
-                        let newTr = document.createElement('td');
-                            newTr.setAttribute('colspan', this.tableColumns);
-                            newTr.appendChild(newPColName);
-                        let TrContainer = document.createElement('tr');
+                        const newTd = document.createElement('td');
+                            newTd.setAttribute('style',this.props.style.td);
+                            newTd.setAttribute('class',this.props.class.td);
+                            newTd.setAttribute('colspan', this.tableColumns);
+                            newTd.appendChild(newPColName);
+                        const TrContainer = document.createElement('tr');
                             TrContainer.setAttribute('style',this.props.style.tr);
                             TrContainer.setAttribute('class',this.props.class.tr);
-                            TrContainer.appendChild(newTr);
+                            TrContainer.appendChild(newTd);
                             TrContainer.style.visibility = 'collapse';
                         if ((positionData/2) == this.state.tableRows-1 ) {
                             this.table.children[1].appendChild(TrContainer);
@@ -188,25 +192,25 @@ export default class Tableresponsive {
                     else {
                         if (i%2 == 0) {
                             // OBTENER FILA ACTUAL
-                            let tr = this.table.children[1].children[i];
+                            const tr = this.table.children[1].children[i];
                             // OBTENER POSICION ÚLTIMA COLUMNA VISIBLE
-                            let lastColVisible = this.table.children[1].children[i].children.length-(2+this.state.tableColumnsHidden); 
+                            const lastColVisible = this.table.children[1].children[i].children.length-(2+this.state.tableColumnsHidden); 
                             // OCULTAR TITULO HEADER
                             this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.display = 'none';
                             this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].style.width = 0;
                             // OCULTAR COLUMNA
                             tr.children[lastColVisible].style.display = 'none';
                             // CREAR '<b>' CON EL NOMBRE COLUMNA
-                            let newBColName = document.createElement('b');
+                            const newBColName = document.createElement('b');
                                 newBColName.setAttribute('style',this.props.style.b);
                                 newBColName.setAttribute('class',this.props.class.b);
                                 newBColName.textContent = this.table.children[0].children[0].children[this.tableColumns-(1+this.state.tableColumnsHidden)].textContent;
                                 newBColName.style.cursor = 'hand';
                                 newBColName.addEventListener('click', this.filterData.bind(this));
                             // CREAR TEXTNODE CON LA DATA DE LA COLUMNA A OCULTAR
-                            let newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
+                            const newBText = document.createTextNode(' : '+tr.children[lastColVisible].textContent);
                             // CREAR '<p>' PARA INCLUIR TODO
-                            let newPColName = document.createElement('p');
+                            const newPColName = document.createElement('p');
                                 newPColName.setAttribute('style','margin:0;'+this.props.style.p);
                                 newPColName.setAttribute('class',this.props.class.p);
                                 newPColName.appendChild(newBColName);
@@ -243,9 +247,9 @@ export default class Tableresponsive {
                 for (let i = 0; i <= this.state.tableRows-2; i++) {                 
                     if (i%2 == 0) {
                         // OBTENER FILA ACTUAL
-                        let tr = this.table.children[1].children[i];
+                        const tr = this.table.children[1].children[i];
                         // OBTENER NUMERO DE ELEMENTOS EN EL DESPLEGABLE OCULTO
-                        let elements = this.table.children[1].children[i+1].children[0].children.length;
+                        const elements = this.table.children[1].children[i+1].children[0].children.length;
                         // MOSTRAR COLUMNA HEADER
                         this.table.children[0].children[0].children[this.state.tableColumnsVisible].style.display = 'table-cell';
                         this.table.children[0].children[0].children[this.state.tableColumnsVisible].style.width = 'auto';
@@ -295,10 +299,10 @@ export default class Tableresponsive {
         let totalWidth = 0;
         // RECORRER LOS ELEMENTOS PADRES PARA OBTENER LOS MARGIN Y PADDINGS
         do {
-            let ML = window.getComputedStyle(element.parentNode).getPropertyValue('margin-left').slice(0,-2);
-            let MR = window.getComputedStyle(element.parentNode).getPropertyValue('margin-right').slice(0,-2);
-            let PL = window.getComputedStyle(element.parentNode).getPropertyValue('padding-left').slice(0,-2);
-            let PR = window.getComputedStyle(element.parentNode).getPropertyValue('padding-right').slice(0,-2);
+            const ML = window.getComputedStyle(element.parentNode).getPropertyValue('margin-left').slice(0,-2);
+            const MR = window.getComputedStyle(element.parentNode).getPropertyValue('margin-right').slice(0,-2);
+            const PL = window.getComputedStyle(element.parentNode).getPropertyValue('padding-left').slice(0,-2);
+            const PR = window.getComputedStyle(element.parentNode).getPropertyValue('padding-right').slice(0,-2);
             totalWidth += parseInt(ML)+parseInt(MR)+parseInt(PL)+parseInt(PR);
             element = element.parentNode;
         } while (element.tagName != 'HTML');
@@ -307,16 +311,14 @@ export default class Tableresponsive {
     }
     // OBTIENE ANCHO DE COLUMNAS DE LA TABLA
     obtainWidthColumns() {
-        let array = [];
+        const array = [];
         Array.from(this.table.children[0].children[0].children).forEach( th => {
-            let totalWidth = 0;
-            let ML = window.getComputedStyle(th).getPropertyValue('margin-left').slice(0,-2);
-            let MR = window.getComputedStyle(th).getPropertyValue('margin-right').slice(0,-2);
-            let PL = window.getComputedStyle(th).getPropertyValue('padding-left').slice(0,-2);
-            let PR = window.getComputedStyle(th).getPropertyValue('padding-right').slice(0,-2);
-            let width = window.getComputedStyle(th).getPropertyValue('width').slice(0,-2);
-            totalWidth = parseInt(ML)+parseInt(MR)+parseInt(PL)+parseInt(PR)+parseInt(width);
-            array.push(totalWidth);
+            const ML = window.getComputedStyle(th).getPropertyValue('margin-left').slice(0,-2);
+            const MR = window.getComputedStyle(th).getPropertyValue('margin-right').slice(0,-2);
+            const PL = window.getComputedStyle(th).getPropertyValue('padding-left').slice(0,-2);
+            const PR = window.getComputedStyle(th).getPropertyValue('padding-right').slice(0,-2);
+            const width = window.getComputedStyle(th).getPropertyValue('width').slice(0,-2);
+            array.push( parseInt(ML)+parseInt(MR)+parseInt(PL)+parseInt(PR)+parseInt(width) );
         })
         return array;
     }
@@ -334,13 +336,13 @@ export default class Tableresponsive {
         return await new Promise( (resolve, reject) => {
             try {
                 // DEFINIR PROPIEDAD INIT & TEMP EN THIS.DATA
-                if (!this.data.hasOwnProperty('init')) Object.defineProperty(this.data, 'init', {value:[]/*, configurable:true*/});
+                if (!this.data.hasOwnProperty('init')) Object.defineProperty(this.data, 'init', {value:[]});
                 Object.defineProperty(this.data, 'temp', {value:[], writable:true});
                 const initData = this.data.init.length == 0 ? true : false;
                 // RECORRER TABLA E INSERTAR OBJETO FILA
                 resolve( Array.from(this.table.children).map( tPart => {
                     Array.from(tPart.children).map( (row, rowKey) => {
-                        let fila = {};
+                        const fila = {};
                         // SI ES EL TBODY GUARDAR DATA
                         if (row.parentNode.nodeName == 'TBODY') {
                             // SI ESTA DESPLEGADA LA TABLA GUARDAR DATA CADA FILA
@@ -375,7 +377,7 @@ export default class Tableresponsive {
                 const order = Object.values(this.data.order);
                 if (prop.length == 0) arr.map( el => prop.push(el.toString()) );
                 if (order.length == 0) arr.map( () => order.push('ASC')  );
-                let newData = this.data.temp.slice().sort( (a, b) => this.mRepeat(a, b, prop, order, 0));
+                const newData = this.data.temp.slice().sort( (a, b) => this.mRepeat(a, b, prop, order, 0));
                 resolve( Object.defineProperty(this.data, 'temp', {value:newData}) );
             } catch(err) {
                 reject(err);
@@ -430,7 +432,7 @@ export default class Tableresponsive {
     // FILTRAR DATA
     filterData(e) {
         // OBTENER INDEX
-        let index = e.target.nodeName == 'B' ? (
+        const index = e.target.nodeName == 'B' ? (
             (this.tableColumns-1)-Array.from(e.target.parentNode.parentNode.children).indexOf(e.target.parentNode)
         ) : e.target.cellIndex;
         // SI '' --> ↑, SI EXISTE ↑ --> ↓, SI EXISTE ↓ --> ''

@@ -32,10 +32,11 @@ Para personalizar los estilos del botón, fondo, titulos de la columna o los dat
     new Tableresponsive({
         id:'#IDtable',
         style: {
-            button:'border:none;',
-            tr:'background-color:white',
-            b: 'font-size:16px;',
-            p: 'color:#ff0000;';
+            button:'background-color:#4B4237;color:#D5A021',
+            tr:'background-color:#4B4237',
+            td:'border:1px dashed #D5A021;',
+            b: 'font-size:16px;color:#D5A021',
+            p: 'color:#EDE7D9'
         }
     });
 
@@ -46,8 +47,9 @@ O bien puede agregar la propiedad class al objeto y declare los estilos que dese
         class: {
             button:'btn btn-sm btn-primary',
             tr:'bg-white',
+            td:'p-2',
             b: 'text-uppercase font-weight-bold',
-            p: 'text-muted';
+            p: 'text-muted'
         }
     });
 
