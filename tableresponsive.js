@@ -36,7 +36,7 @@ export default class Tableresponsive {
             windowWidth: ''
         };
         // DATA
-        this.data = {};
+        this.data = {order:{}};
         // EVENTOS WINDOW
         window.addEventListener('resize', this.main.bind(this));
         window.addEventListener('load', this.main.bind(this));
@@ -334,11 +334,11 @@ export default class Tableresponsive {
         return await new Promise( (resolve, reject) => {
             try {
                 // DEFINIR PROPIEDAD INIT & TEMP EN THIS.DATA
-                if (!this.data.hasOwnProperty('init')) Object.defineProperty(this.data, 'init', {value:[], configurable:true});
-                Object.defineProperty(this.data, 'temp', {value:[], configurable:true});
+                if (!this.data.hasOwnProperty('init')) Object.defineProperty(this.data, 'init', {value:[]/*, configurable:true*/});
+                Object.defineProperty(this.data, 'temp', {value:[], writable:true});
                 const initData = this.data.init.length == 0 ? true : false;
                 // RECORRER TABLA E INSERTAR OBJETO FILA
-                Array.from(this.table.children).map( tPart => {
+                resolve( Array.from(this.table.children).map( tPart => {
                     Array.from(tPart.children).map( (row, rowKey) => {
                         let fila = {};
                         // SI ES EL TBODY GUARDAR DATA
@@ -347,37 +347,49 @@ export default class Tableresponsive {
                             // SINO GUARDAR DATA FILAS PARES(INDICE/2) EXCEPTO POS. BOTON
                             if (this.state.firstCompressed == true) {
                                 Array.from(row.children).map( (col, colKey) => {
-                                    Object.defineProperty(fila, 'val'+colKey, {value:col.textContent});
+                                    Object.defineProperty(fila, 'val'+colKey, {value:col.textContent, enumerable:true});
                                 });
                                 if (initData) Object.defineProperty(this.data.init, rowKey, {value:fila});
                                 Object.defineProperty(this.data.temp, rowKey, {value:fila});
                             } else if (rowKey%2==0) {
                                 Array.from(row.children).map( (col, colKey) => {
-                                    if ((row.children.length-1) != colKey) Object.defineProperty(fila, 'val'+colKey, {value:col.textContent});
+                                    if ((row.children.length-1) != colKey) Object.defineProperty(fila, 'val'+colKey, {value:col.textContent, enumerable:true});
                                 });
                                 if (initData) Object.defineProperty(this.data.init, rowKey/2, {value:fila});
                                 Object.defineProperty(this.data.temp, rowKey/2, {value:fila});
                             }
                         }
                     });
-                });
-                resolve(this.data);
+                }));
             } catch(err) {
                 reject(err);
             }
         });
     }
     // ORDENAR DATA
-    async sortData(val, reverse) {
+    async sortData() {
         return await new Promise( (resolve, reject) => {
-            try {
-                let newData = this.data.temp.slice().sort((a, b) => a[val].localeCompare(b[val]));
-                if(reverse) newData = newData.reverse();
-                Object.defineProperty(this.data, 'temp', {value:newData});
+            try {    
+                const arr = Object.values(this.data.temp[0]);
+                const prop = Object.keys(this.data.order);
+                const order = Object.values(this.data.order);
+                if (prop.length == 0) arr.map( el => prop.push(el.toString()) );
+                if (order.length == 0) arr.map( () => order.push('ASC')  );
+                let newData = this.data.temp.slice().sort( (a, b) => this.mRepeat(a, b, prop, order, 0));
+                resolve( Object.defineProperty(this.data, 'temp', {value:newData}) );
             } catch(err) {
                 reject(err);
             }
         });
+    }
+    // ORDENAR MULTIPLE
+    mRepeat(a, b, prop, order, index) {  
+        const direction = order[index] == 'ASC' ? 0 : 1;
+        const A = a[prop[index]];
+        const B = b[prop[index]];
+        if(A < B) return direction == 0 ? -1 : 1;
+        if(A == B) return prop.length-1 > index ? this.mRepeat(a,b,prop,order,index+1) : 0;
+        return direction == 0 ? 1 : -1;
     }
     // INSERTAR DATA
     async insertData() {
@@ -424,28 +436,33 @@ export default class Tableresponsive {
         // SI '' --> ↑, SI EXISTE ↑ --> ↓, SI EXISTE ↓ --> ''
         if (!e.target.textContent.includes('↑') && !e.target.textContent.includes('↓')) {
             e.target.textContent = e.target.textContent+' ↑';
+            Object.defineProperty(this.data.order, `val${index}`, {value:'ASC', writable:true, enumerable: true, configurable: true});
         } else if (e.target.textContent.includes('↑')) {
             e.target.textContent = e.target.textContent.slice(0,-2)+' ↓';
+            Object.defineProperty(this.data.order, `val${index}`, {value:'DESC'});
         } else if (e.target.textContent.includes('↓')) {
             e.target.textContent = e.target.textContent.slice(0,-2);
-            // ASIGNAR DATA INICIAL A DATA TEMPORAL Y INSERTAR DATA
+            // ELIMINAR FILTRO EN THIS.DATA.ORDER
+            delete this.data.order[`val${index}`];
+            // ASIGNAR DATA INICIAL A DATA TEMPORAL
             Object.defineProperty(this.data, 'temp', {value:this.data.init});
-            this.insertData();
+            // INSERTAR DATA SI NO EXISTE NINGUN VALOR EN THIS.DATA.ORDER
+            if (Object.keys(this.data.order).length == 0) this.insertData();
         }
         // SI EL ELEMENTO ES DE LA FILA OCULTA, APLICAR ESTILO A CABECERA TABLA Y A DEMAS ELEMENTOS OCULTOS
         if (e.target.nodeName == 'B') {
-            e.target.offsetParent.offsetParent.children[0].children[0].children[index].textContent = e.target.textContent;
+            this.table.children[0].children[0].children[index].textContent = e.target.textContent;
             Array.from(this.table.children[1].children).map( (tr, trKey) => {
                 if (trKey%2!=0) {
                     tr.children[0].children[(this.tableColumns-1)-index].children[0].textContent = e.target.textContent;
                 }
             });
         }
-        // SI ↑ O ↓ APLICA FILTRO A THIS.DATA.TEMP Y SE INSERTA EN LA TABLA, SINO INSERTAR EN LA TABLA THIS.DATA.INIT
-        if (e.target.textContent.includes('↑') || e.target.textContent.includes('↓')) {
-            this.objectDataBuilder().then( data => {
-                this.sortData(`val${index}`, e.target.textContent.includes('↓'));
-            }).then( () => this.insertData() );
+        // SI EXISTE ALGUN VALOR EN THIS.DATA.ORDER APLICAR FILTRO
+        if (Object.keys(this.data.order).length != 0) {
+            this.objectDataBuilder()
+            .then( data => this.sortData() )
+            .then( () => this.insertData() );
         }
     }
   }
